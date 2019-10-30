@@ -66,7 +66,7 @@ def menulast(message):
     btns[2].url("Streaming", "https://www.premiersport.tv/")
 
     message.edit((
-                     "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (IT)"
+                     "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (CET)"
                  ).format(data['raceName'], data['round'],
                           convertData(data['date']),
                           convertTime(data['time'])),
@@ -130,7 +130,7 @@ def last_command(chat):
     # btns[2].url("Streaming", "https://www.premiersport.tv/")
 
     chat.send((
-                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (IT)"
+                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (CET)"
               ).format(data['raceName'], data['round'],
                        convertData(data['date']),
                        convertTime(data['time'])),
@@ -152,7 +152,7 @@ def next_command(chat, message, args):
     btns[1].url("Streaming", "https://www.premiersport.tv/")
 
     chat.send((
-                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (IT)\n*Missing*: {}"
+                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (CET)\n*Missing*: {}"
               ).format(data['raceName'],
                        data['round'],
                        convertData(data['date']),
