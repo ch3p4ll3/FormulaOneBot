@@ -1,8 +1,9 @@
 import requests
 import botogram
 import datetime
+from src import config
 
-bot = botogram.create("xxx")
+bot = botogram.create(config.token_tg)
 
 
 def convertTime(strr):
@@ -29,7 +30,7 @@ def convertData(strr):
 
 
 @bot.callback("racelast")
-def racelast(query, chat, message):
+def racelast(message):
     URL = "http://ergast.com/api/f1/current/last/results.json"
 
     r = requests.get(URL)
@@ -51,7 +52,7 @@ def racelast(query, chat, message):
 
 
 @bot.callback("menulast")
-def menulast(query, chat, message):
+def menulast(message):
     URL = "http://ergast.com/api/f1/current/last.json"
 
     r = requests.get(URL)
@@ -73,13 +74,13 @@ def menulast(query, chat, message):
 
 
 @bot.callback("qualylast")
-def qualyslast(query, chat, message):
+def qualyslast(message):
     URL = "http://ergast.com/api/f1/current/last/qualifying.json"
 
     r = requests.get(URL)
 
     data = r.json()['MRData']['RaceTable']['Races'][0]['QualifyingResults']
-    # print(data)
+
     btns = botogram.Buttons()
     btns[0].callback("Race", "racelast")
     btns[1].callback("Go back", "menulast")
@@ -105,7 +106,7 @@ def qualyslast(query, chat, message):
 
 
 @bot.callback("resultslast")
-def resultslast(query, chat, message):
+def resultslast(message):
     btns = botogram.Buttons()
     btns[0].callback("Qualify", "qualylast")
     btns[0].callback("Race", "racelast")
@@ -114,7 +115,7 @@ def resultslast(query, chat, message):
 
 
 @bot.command("last")
-def last_command(chat, message, args):
+def last_command(chat):
     """show the results of the last f1 race and qualifying"""
     URL = "http://ergast.com/api/f1/current/last.json"
 
@@ -126,7 +127,7 @@ def last_command(chat, message, args):
 
     btns[0].callback("Results", "resultslast")
     btns[1].url(data['raceName'], data['url'])
-    btns[2].url("Streaming", "https://www.premiersport.tv/")
+    # btns[2].url("Streaming", "https://www.premiersport.tv/")
 
     chat.send((
                   "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (IT)"
@@ -161,7 +162,7 @@ def next_command(chat, message, args):
 
 
 @bot.callback("menustand")
-def menustand(query, message, chat):
+def menustand(message):
     btns = botogram.Buttons()
     btns[0].callback("Driver Standings", "driverstand")
     btns[1].callback("Constructor Standings", "constructorstand")
@@ -170,7 +171,7 @@ def menustand(query, message, chat):
 
 
 @bot.callback("constructorstand")
-def constructorstand(query, chat, message):
+def constructorstand(message):
     btns = botogram.Buttons()
     btns[0].callback("Driver Standings", "driverstand")
     btns[1].callback("Go back", "menustand")
@@ -190,7 +191,7 @@ def constructorstand(query, chat, message):
 
 
 @bot.callback("driverstand")
-def driverstand(query, chat, message):
+def driverstand(message):
     URL = "http://ergast.com/api/f1/current/driverStandings.json"
 
     r = requests.get(URL)
@@ -210,7 +211,7 @@ def driverstand(query, chat, message):
 
 
 @bot.command("standings")
-def standings(chat, message):
+def standings(chat):
     """Driver and Constructor standings"""
     btns = botogram.Buttons()
     btns[0].callback("Driver Standings", "driverstand")
@@ -220,7 +221,7 @@ def standings(chat, message):
 
 
 @bot.callback("menudrivers")
-def menudriver(query, chat, message):
+def menudriver(chat):
     URL = "http://ergast.com/api/f1/current/drivers.json"
 
     btns = botogram.Buttons()
@@ -242,7 +243,7 @@ def menudriver(query, chat, message):
 
 
 @bot.callback("drivers")
-def driverlist(query, chat, message, data):
+def driverlist(message, data):
     URL = "http://ergast.com/api/f1/current/drivers.json"
 
     btns = botogram.Buttons()
@@ -268,7 +269,7 @@ def driverlist(query, chat, message, data):
 
 
 @bot.command("drivers")
-def drivers(chat, message, args):
+def drivers(chat):
     """list F1 drivers"""
     URL = "http://ergast.com/api/f1/current/drivers.json"
 
@@ -291,7 +292,7 @@ def drivers(chat, message, args):
 
 
 @bot.callback("menudconstructors")
-def menudconstructors(query, chat, message):
+def menudconstructors(message):
     URL = "http://ergast.com/api/f1/current/constructors.json"
 
     btns = botogram.Buttons()
@@ -313,7 +314,7 @@ def menudconstructors(query, chat, message):
 
 
 @bot.callback("constructorlst")
-def constructorlist(query, chat, message, data):
+def constructorlist(message, data):
     URL = "http://ergast.com/api/f1/current/constructors.json"
 
     btns = botogram.Buttons()
@@ -346,7 +347,7 @@ def constructorlist(query, chat, message, data):
 
 
 @bot.command("constructors")
-def constructors(chat, message, args):
+def constructors(chat):
     """list F1 constructors"""
     URL = "http://ergast.com/api/f1/current/constructors.json"
 
@@ -369,7 +370,7 @@ def constructors(chat, message, args):
 
 
 @bot.command("raceresults")
-def raceresults(chat, message):
+def raceresults(chat):
     """List all f1 races and get all results"""
     URL = "https://ergast.com/api/f1/current/results.json?limit=99999"
 
@@ -392,7 +393,7 @@ def raceresults(chat, message):
 
 
 @bot.callback("raceresult")
-def raceresultquery(query, chat, message, data):
+def raceresultquery(message, data):
     URL = "https://ergast.com/api/f1/current/{}/results.json".format(str(data))
 
     r = requests.get(URL)
@@ -466,6 +467,89 @@ def menuresults(message):
         i += 1
 
     message.edit("Race results", attach=btns, syntax="markdown")
+
+
+@bot.command("circuits")
+def circuitslist(chat):
+    URL = "https://ergast.com/api/f1/current/circuits.json"
+
+    r = requests.get(URL)
+
+    data = r.json()['MRData']['CircuitTable']['Circuits']
+
+    btns = botogram.Buttons()
+
+    i = -1
+    y = 0
+
+    for dat in data:
+        btns[y].callback(dat['circuitName'], "circuitslst", dat['circuitId'])
+        if i % 2 == 0:
+            y += 1
+        i += 1
+
+    chat.send("Circuit list", attach=btns)
+
+
+@bot.callback("circuitslst")
+def circuitsinfo(message, data):
+    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(str(data))
+    URL2 = "https://ergast.com/api/f1/current/circuits/{}/races.json".format(str(data))
+
+    r = requests.get(URL)
+    r2 = requests.get(URL2)
+
+    dat = r.json()['MRData']['CircuitTable']['Circuits'][0]
+    dat2 = r2.json()['MRData']['RaceTable']['Races'][0]
+
+    btns = botogram.Buttons()
+
+    btns[0].url(dat['circuitName'], dat['url'])
+    btns[1].callback("Send Position", "sendCircuitPosition", data)
+    btns[2].callback("Go back", "menuCircuits")
+
+    l = ("*{}*\n*Round:* {}\n*Date:* {}"
+         "\n*Time:* {}\n*Locality:* {}, {}").format(dat['circuitName'],
+                                                  dat2['round'],
+                                                  convertData(dat2['date']),
+                                                  convertTime(dat2['time']),
+                                                  dat['Location']['locality'],
+                                                  dat['Location']['country'])
+
+    message.edit(l, attach=btns, syntax="markdown")
+
+
+@bot.callback("menuCircuits")
+def menucircuits(chat):
+    URL = "https://ergast.com/api/f1/current/circuits.json"
+
+    r = requests.get(URL)
+
+    data = r.json()['MRData']['CircuitTable']['Circuits']
+
+    btns = botogram.Buttons()
+
+    i = -1
+    y = 0
+
+    for dat in data:
+        btns[y].callback(dat['circuitName'], "circuitslst", dat['circuitId'])
+        if i % 2 == 0:
+            y += 1
+        i += 1
+
+    chat.send("Circuit list", attach=btns)
+
+
+@bot.callback("sendCircuitPosition")
+def circuitposition(chat, data):
+    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(str(data))
+
+    r = requests.get(URL)
+
+    dat = r.json()['MRData']['CircuitTable']['Circuits'][0]
+    chat.send_location(latitude=dat['Location']['lat'],
+                       longitude=dat['Location']['long'])
 
 
 if __name__ == "__main__":

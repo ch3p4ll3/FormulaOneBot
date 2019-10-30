@@ -1,0 +1,2 @@
+botogram2==0.6
+requests==2.22.0
