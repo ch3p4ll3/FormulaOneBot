@@ -18,8 +18,8 @@ def diffdate(data, f):
     now = datetime.datetime.now()
     date1 = data + " " + f
     date2 = now.strftime("%d/%m/%Y %H:%M:%S")
-    diff = datetime.datetime.strptime(date1, datetimeFormat) \
-           - datetime.datetime.strptime(date2, datetimeFormat)
+    diff = (datetime.datetime.strptime(date1, datetimeFormat) -
+            datetime.datetime.strptime(date2, datetimeFormat))
 
     return diff
 
@@ -39,16 +39,18 @@ def racelast(message):
     btns = botogram.Buttons()
     btns[0].callback("Qualify", "qualylast")
     btns[1].callback("Go back", "menulast")
-    l = "DRIVER | GAP\n\n"
+    text = "DRIVER | GAP\n\n"
     for driver in data:
         try:
-            l += driver['Driver']['code'] + " | " + driver['Time']['time'] + "\n"
+            text += driver['Driver']['code'] + " | " + \
+                    driver['Time']['time'] + "\n"
         except KeyError:
             try:
-                l += driver['Driver']['code'] + " | " + driver['status'] + "\n"
-            except:
+                text += driver['Driver']['code'] + " | " + \
+                        driver['status'] + "\n"
+            except Exception:
                 pass
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.callback("menulast")
@@ -84,25 +86,28 @@ def qualyslast(message):
     btns = botogram.Buttons()
     btns[0].callback("Race", "racelast")
     btns[1].callback("Go back", "menulast")
-    l = "DRIVER | Time\n\n"
+    text = "DRIVER | Time\n\n"
     for driver in data:
         try:
             if driver['Q3'] != "":
-                l += driver['Driver']['code'] + " | " + driver['Q3'] + "\n"
+                text += driver['Driver']['code'] + " | " + \
+                        driver['Q3'] + "\n"
             else:
-                l += driver['Driver']['code'] + " | DNF\n"
+                text += driver['Driver']['code'] + " | DNF\n"
         except KeyError:
             try:
                 if driver['Q2'] != "":
-                    l += driver['Driver']['code'] + " | " + driver['Q2'] + "\n"
+                    text += driver['Driver']['code'] + " | " + \
+                            driver['Q2'] + "\n"
                 else:
-                    l += driver['Driver']['code'] + " | DNF\n"
+                    text += driver['Driver']['code'] + " | DNF\n"
             except KeyError:
                 if driver['Q1'] != "":
-                    l += driver['Driver']['code'] + " | " + driver['Q1'] + "\n"
+                    text += driver['Driver']['code'] + " | " + \
+                            driver['Q1'] + "\n"
                 else:
-                    l += driver['Driver']['code'] + " | DNF\n"
-    message.edit(l, attach=btns)
+                    text += driver['Driver']['code'] + " | DNF\n"
+    message.edit(text, attach=btns)
 
 
 @bot.callback("resultslast")
@@ -152,12 +157,14 @@ def next_command(chat, message, args):
     btns[1].url("Streaming", "https://www.premiersport.tv/")
 
     chat.send((
-                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (CET)\n*Missing*: {}"
+                  "*{}*\n*Round: *{}\n*Data: *{}\n*Time: *{} (CET)"
+                  "\n*Missing*: {}"
               ).format(data['raceName'],
                        data['round'],
                        convertData(data['date']),
                        convertTime(data['time']),
-                       diffdate(convertData(data['date']), convertTime(data['time']))),
+                       diffdate(convertData(data['date']),
+                                convertTime(data['time']))),
               syntax="markdown", attach=btns)
 
 
@@ -180,14 +187,15 @@ def constructorstand(message):
 
     r = requests.get(URL)
 
-    data = r.json()['MRData']['StandingsTable']['StandingsLists'][0]['ConstructorStandings']
+    data = r.json()['MRData']['StandingsTable']
+    data = data['StandingsLists'][0]['ConstructorStandings']
 
-    l = "Car | points\n\n"
+    text = "Car | points\n\n"
 
     for car in data:
-        l += car['Constructor']['name'] + " | " + car['points'] + "\n"
+        text += car['Constructor']['name'] + " | " + car['points'] + "\n"
 
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.callback("driverstand")
@@ -196,18 +204,21 @@ def driverstand(message):
 
     r = requests.get(URL)
 
-    data = r.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
+    data = r.json()['MRData']['StandingsTable']
+    data = data['StandingsLists'][0]['DriverStandings']
 
     btns = botogram.Buttons()
     btns[0].callback("Constructor Standings", "constructorstand")
     btns[1].callback("Go back", "menustand")
 
-    l = "Driver | Car | points\n\n"
+    text = "Driver | Car | points\n\n"
 
     for driver in data:
-        l += driver['Driver']['code'] + " | " + driver['Constructors'][0]['name'] + " | " + driver['points'] + "\n"
+        text += driver['Driver']['code'] + " | " + \
+                driver['Constructors'][0]['name'] + " | " + \
+                driver['points'] + "\n"
 
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.command("standings")
@@ -252,20 +263,20 @@ def driverlist(message, data):
 
     dat = r.json()['MRData']['DriverTable']['Drivers']
 
-    l = ""
+    text = ""
 
     for driver in dat:
         if driver['driverId'] == data:
-            btns[0].url(driver['givenName'] + " " + driver['familyName'], driver['url'])
+            btns[0].url(driver['givenName'] + " " + driver['familyName'],
+                        driver['url'])
 
-            l += ("*" + driver['givenName'] + " " + driver['familyName'] + "*\n\n"
-                                                                           "*Number: *" + driver[
-                      'permanentNumber'] + "\n*Date of birth: *" +
-                  convertData(driver['dateOfBirth']) + "\n*Nationality: *" +
-                  driver['nationality'])
+            text += ("*" + driver['givenName'] + " " + driver['familyName']
+                     + "*\n\n*Number: *" + driver['permanentNumber'] + "\n" +
+                     "*Date of birth: *" + convertData(driver['dateOfBirth'])
+                     + "\n*Nationality: *" + driver['nationality'])
 
     btns[1].callback("Go back", "menudrivers")
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.command("drivers")
@@ -283,7 +294,8 @@ def drivers(chat):
     y = 0
 
     for driver in data:
-        btns[y].callback(driver['familyName'], "drivers", driver['driverId'])
+        btns[y].callback(driver['familyName'], "drivers",
+                         driver['driverId'])
         if (i % 3 == 0):
             y += 1
         i += 1
@@ -305,7 +317,8 @@ def menudconstructors(message):
     y = 0
 
     for driver in data:
-        btns[y].callback(driver['name'], "constructorlst", driver['constructorId'])
+        btns[y].callback(driver['name'], "constructorlst",
+                         driver['constructorId'])
         if (i % 2 == 0):
             y += 1
         i += 1
@@ -323,14 +336,15 @@ def constructorlist(message, data):
 
     dat = r.json()['MRData']['ConstructorTable']['Constructors']
 
-    l = ""
+    text = ""
 
     for driver in dat:
         if driver['constructorId'] == data:
             btns[0].url(driver['name'], driver['url'])
 
             vincite = requests.get(
-                "https://ergast.com/api/f1/constructors/" + data + "/constructorStandings/1/seasons.json")
+                "https://ergast.com/api/f1/constructors/" + data +
+                "/constructorStandings/1/seasons.json")
 
             vittorie = vincite.json()['MRData']
 
@@ -338,12 +352,12 @@ def constructorlist(message, data):
             for c in vittorie['SeasonTable']['Seasons']:
                 l2 += c['season'] + " , "
 
-            l += ("*" + driver['name'] + "*\n\n*Championships: *"
-                  + vittorie['total'] + "\n*Years: *" + l2[0:len(l2) - 3] +
-                  "\n*Nationality: *" + driver['nationality'])
+            text += ("*" + driver['name'] + "*\n\n*Championships: *" +
+                     vittorie['total'] + "\n*Years: *" + l2[0:len(l2) - 3] +
+                     "\n*Nationality: *" + driver['nationality'])
 
     btns[1].callback("Go back", "menudconstructors")
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.command("constructors")
@@ -361,7 +375,8 @@ def constructors(chat):
     y = 0
 
     for driver in data:
-        btns[y].callback(driver['name'], "constructorlst", driver['constructorId'])
+        btns[y].callback(driver['name'], "constructorlst",
+                         driver['constructorId'])
         if (i % 2 == 0):
             y += 1
         i += 1
@@ -394,7 +409,8 @@ def raceresults(chat):
 
 @bot.callback("raceresult")
 def raceresultquery(message, data):
-    URL = "https://ergast.com/api/f1/current/{}/results.json".format(str(data))
+    URL = "https://ergast.com/api/f1/current/{}/results.json".format(
+        str(data))
 
     r = requests.get(URL)
 
@@ -403,21 +419,26 @@ def raceresultquery(message, data):
     btns = botogram.Buttons()
     btns[0].callback("Qualify", "qualyresult", str(data))
     btns[1].callback("Go back", "menuresults")
-    l = "*{}*\n\nDRIVER | GAP\n".format(r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
+    text = "*{}*\n\nDRIVER | GAP\n".format(
+        r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
+
     for driver in dat:
         try:
-            l += driver['Driver']['code'] + " | " + driver['Time']['time'] + "\n"
+            text += driver['Driver']['code'] + " | " + \
+                    driver['Time']['time'] + "\n"
         except KeyError:
             try:
-                l += driver['Driver']['code'] + " | " + driver['status'] + "\n"
-            except:
+                text += driver['Driver']['code'] + " | " + \
+                        driver['status'] + "\n"
+            except Exception:
                 pass
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.callback("qualyresult")
 def qualyresults(message, data):
-    URL = "https://ergast.com/api/f1/current/{}/qualifying.json".format(str(data))
+    URL = "https://ergast.com/api/f1/current/{}/qualifying.json".format(
+        str(data))
 
     r = requests.get(URL)
 
@@ -425,26 +446,30 @@ def qualyresults(message, data):
     btns = botogram.Buttons()
     btns[0].callback("Race", "raceresult", str(data))
     btns[1].callback("Go back", "menuresults")
-    l = "*{}*\n\nDRIVER | Time\n".format(r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
+    text = "*{}*\n\nDRIVER | Time\n".format(
+        r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
     for driver in dat:
         try:
             if driver['Q3'] != "":
-                l += driver['Driver']['code'] + " | " + driver['Q3'] + "\n"
+                text += driver['Driver']['code'] + " | " + \
+                        driver['Q3'] + "\n"
             else:
-                l += driver['Driver']['code'] + " | DNF\n"
+                text += driver['Driver']['code'] + " | DNF\n"
         except KeyError:
             try:
                 if driver['Q2'] != "":
-                    l += driver['Driver']['code'] + " | " + driver['Q2'] + "\n"
+                    text += driver['Driver']['code'] + " | " + \
+                            driver['Q2'] + "\n"
                 else:
-                    l += driver['Driver']['code'] + " | DNF\n"
+                    text += driver['Driver']['code'] + " | DNF\n"
             except KeyError:
                 if driver['Q1'] != "":
-                    l += driver['Driver']['code'] + " | " + driver['Q1'] + "\n"
+                    text += driver['Driver']['code'] + " | " + \
+                            driver['Q1'] + "\n"
                 else:
-                    l += driver['Driver']['code'] + " | DNF\n"
+                    text += driver['Driver']['code'] + " | DNF\n"
 
-    message.edit(l, attach=btns)
+    message.edit(text, attach=btns)
 
 
 @bot.callback("menuresults")
@@ -493,8 +518,12 @@ def circuitslist(chat):
 
 @bot.callback("circuitslst")
 def circuitsinfo(message, data):
-    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(str(data))
-    URL2 = "https://ergast.com/api/f1/current/circuits/{}/races.json".format(str(data))
+    """List all circuits"""
+    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(
+        str(data))
+
+    URL2 = "https://ergast.com/api/f1/current/circuits/{}/races.json".format(
+        str(data))
 
     r = requests.get(URL)
     r2 = requests.get(URL2)
@@ -508,19 +537,20 @@ def circuitsinfo(message, data):
     btns[1].callback("Send Position", "sendCircuitPosition", data)
     btns[2].callback("Go back", "menuCircuits")
 
-    l = ("*{}*\n*Round:* {}\n*Date:* {}"
-         "\n*Time:* {}\n*Locality:* {}, {}").format(dat['circuitName'],
-                                                  dat2['round'],
-                                                  convertData(dat2['date']),
-                                                  convertTime(dat2['time']),
-                                                  dat['Location']['locality'],
-                                                  dat['Location']['country'])
+    text = ("*{}*\n*Round:* {}\n*Date:* {}"
+            "\n*Time:* {}\n*Locality:* {}, {}").format(
+                dat['circuitName'],
+                dat2['round'],
+                convertData(dat2['date']),
+                convertTime(dat2['time']),
+                dat['Location']['locality'],
+                dat['Location']['country'])
 
-    message.edit(l, attach=btns, syntax="markdown")
+    message.edit(text, attach=btns, syntax="markdown")
 
 
 @bot.callback("menuCircuits")
-def menucircuits(chat):
+def menucircuits(message):
     URL = "https://ergast.com/api/f1/current/circuits.json"
 
     r = requests.get(URL)
@@ -538,12 +568,13 @@ def menucircuits(chat):
             y += 1
         i += 1
 
-    chat.send("Circuit list", attach=btns)
+    message.edit("Circuit list", attach=btns)
 
 
 @bot.callback("sendCircuitPosition")
 def circuitposition(chat, data):
-    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(str(data))
+    URL = "https://ergast.com/api/f1/current/circuits/{}.json".format(
+        str(data))
 
     r = requests.get(URL)
 
