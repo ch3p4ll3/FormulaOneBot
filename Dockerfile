@@ -8,5 +8,5 @@ RUN echo "Europe/Rome" > /etc/timezone && dpkg-reconfigure -f noninteractive tzd
 ENV TZ=Europe/Rome
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD [ "python", "/code/bot.py" ]
+COPY . /code/
+CMD [ "python", "/code/f1.py" ]
