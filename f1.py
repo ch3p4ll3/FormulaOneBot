@@ -14,6 +14,17 @@ def convert_time(strr):
     return h + ":" + a[1] + ":" + a[2]
 
 
+def control_year(year):
+    url = "http://ergast.com/api/f1/{}".format(year)
+
+    r = requests.get(url)
+
+    if r.status_code == 200:
+        return year
+    else:
+        return "current"
+
+
 def diffdate(data, f):
     datetime_format = '%d/%m/%Y %H:%M:%S'
     now = datetime.datetime.now()
@@ -122,7 +133,7 @@ def resultslast(message):
 
 @bot.command("last")
 def last_command(chat):
-    """show the results of the last f1 race and qualifying"""
+    """Show the results of the last f1 race and qualifying."""
     url = "http://ergast.com/api/f1/current/last.json"
 
     r = requests.get(url)
@@ -145,7 +156,9 @@ def last_command(chat):
 
 @bot.command("next")
 def next_command(chat):
-    """show next f1 race"""
+    """<season> show next f1 race.
+    If the season is not specified or the year
+    is wrong the current season will be used"""
     url = "http://ergast.com/api/f1/current/next.json"
 
     r = requests.get(url)
@@ -170,51 +183,52 @@ def next_command(chat):
 
 
 @bot.callback("menustand")
-def menustand(message):
+def menustand(message, data):
     btns = botogram.Buttons()
-    btns[0].callback("Driver Standings", "driverstand")
-    btns[1].callback("Constructor Standings", "constructorstand")
+    btns[0].callback("Driver Standings", "driverstand", data)
+    btns[1].callback("Constructor Standings", "constructorstand", data)
 
-    message.edit("Standings", syntax="markdown", attach=btns)
+    message.edit("Standings\n*Season: *{}".format(data),
+                 syntax="markdown", attach=btns)
 
 
 @bot.callback("constructorstand")
-def constructorstand(message):
+def constructorstand(message, data):
     btns = botogram.Buttons()
-    btns[0].callback("Driver Standings", "driverstand")
-    btns[1].callback("Go back", "menustand")
+    btns[0].callback("Driver Standings", "driverstand", data)
+    btns[1].callback("Go back", "menustand", data)
 
-    url = "http://ergast.com/api/f1/current/constructorStandings.json"
+    url = "http://ergast.com/api/f1/{}/constructorStandings.json".format(data)
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['StandingsTable']
-    data = data['StandingsLists'][0]['ConstructorStandings']
+    data_requests = r.json()['MRData']['StandingsTable']
+    data_requests = data_requests['StandingsLists'][0]['ConstructorStandings']
 
     text = "Car | points\n\n"
 
-    for car in data:
+    for car in data_requests:
         text += car['Constructor']['name'] + " | " + car['points'] + "\n"
 
     message.edit(text, attach=btns)
 
 
 @bot.callback("driverstand")
-def driverstand(message):
-    url = "http://ergast.com/api/f1/current/driverStandings.json"
+def driverstand(message, data):
+    url = "http://ergast.com/api/f1/{}/driverStandings.json".format(data)
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['StandingsTable']
-    data = data['StandingsLists'][0]['DriverStandings']
+    data_requests = r.json()['MRData']['StandingsTable']
+    data_requests = data_requests['StandingsLists'][0]['DriverStandings']
 
     btns = botogram.Buttons()
-    btns[0].callback("Constructor Standings", "constructorstand")
-    btns[1].callback("Go back", "menustand")
+    btns[0].callback("Constructor Standings", "constructorstand", data)
+    btns[1].callback("Go back", "menustand", data)
 
     text = "Driver | Car | points\n\n"
 
-    for driver in data:
+    for driver in data_requests:
         text += driver['Driver']['code'] + " | " + \
                 driver['Constructors'][0]['name'] + " | " + \
                 driver['points'] + "\n"
@@ -223,50 +237,62 @@ def driverstand(message):
 
 
 @bot.command("standings")
-def standings_command(chat):
-    """Driver and Constructor standings"""
+def standings_command(chat, args):
+    """<season> Driver and Constructor standings.
+     If the season is not specified or the year is
+     wrong the current season will be used"""
     btns = botogram.Buttons()
-    btns[0].callback("Driver Standings", "driverstand")
-    btns[1].callback("Constructor Standings", "constructorstand")
 
-    chat.send("Standings", syntax="markdown", attach=btns)
+    if len(args) > 0:
+        season = control_year(args[0])
+    else:
+        season = "current"
+
+    btns[0].callback("Driver Standings", "driverstand", season)
+    btns[1].callback("Constructor Standings", "constructorstand", season)
+
+    chat.send("Standings\n*Season: *{}".format(season),
+              syntax="markdown", attach=btns)
 
 
 @bot.callback("menudrivers")
-def menudriver(message):
-    url = "http://ergast.com/api/f1/current/drivers.json"
+def menudriver(message, data):
+    url = "http://ergast.com/api/f1/{}/drivers.json".format(data)
 
     btns = botogram.Buttons()
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['DriverTable']['Drivers']
+    data_requests = r.json()['MRData']['DriverTable']['Drivers']
 
     i = 1
     y = 0
 
-    for driver in data:
-        btns[y].callback(driver['familyName'], "drivers", driver['driverId'])
+    for driver in data_requests:
+        btns[y].callback(driver['familyName'], "drivers",
+                         driver['driverId'] + "#{}".format(data))
         if i % 3 == 0:
             y += 1
         i += 1
 
-    message.edit("Drivers", attach=btns)
+    message.edit("Drivers\n*Season: *{}".format(data), attach=btns)
 
 
 @bot.callback("drivers")
 def driverlist(message, data):
-    url = "http://ergast.com/api/f1/current/drivers.json"
+    data, season = data.split("#")
 
     btns = botogram.Buttons()
 
+    url = "http://ergast.com/api/f1/{}/drivers.json".format(season)
+
     r = requests.get(url)
 
-    dat = r.json()['MRData']['DriverTable']['Drivers']
+    data_requests = r.json()['MRData']['DriverTable']['Drivers']
 
     text = ""
 
-    for driver in dat:
+    for driver in data_requests:
         if driver['driverId'] == data:
             btns[0].url(driver['givenName'] + " " + driver['familyName'],
                         driver['url'])
@@ -276,14 +302,20 @@ def driverlist(message, data):
                      "*Date of birth: *" + convert_data(driver['dateOfBirth'])
                      + "\n*Nationality: *" + driver['nationality'])
 
-    btns[1].callback("Go back", "menudrivers")
+    btns[1].callback("Go back", "menudrivers", season)
     message.edit(text, attach=btns)
 
 
 @bot.command("drivers")
-def drivers_command(chat):
+def drivers_command(chat, args):
     """list F1 drivers"""
-    url = "http://ergast.com/api/f1/current/drivers.json"
+
+    if len(args) > 0:
+        season = control_year(args[0])
+    else:
+        season = "current"
+
+    url = "http://ergast.com/api/f1/{}/drivers.json".format(season)
 
     btns = botogram.Buttons()
 
@@ -296,40 +328,43 @@ def drivers_command(chat):
 
     for driver in data:
         btns[y].callback(driver['familyName'], "drivers",
-                         driver['driverId'])
+                         driver['driverId'] + "#{}".format(season))
         if i % 3 == 0:
             y += 1
         i += 1
 
-    chat.send("Drivers", attach=btns)
+    chat.send("Drivers\n*Season: *{}".format(season), attach=btns)
 
 
 @bot.callback("menudconstructors")
-def menudconstructors(message):
-    url = "http://ergast.com/api/f1/current/constructors.json"
+def menudconstructors(message, data):
+    url = "http://ergast.com/api/f1/{}/constructors.json".format(data)
 
     btns = botogram.Buttons()
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['ConstructorTable']['Constructors']
+    data_requests = r.json()['MRData']['ConstructorTable']['Constructors']
 
     i = 1
     y = 0
 
-    for driver in data:
+    for driver in data_requests:
         btns[y].callback(driver['name'], "constructorlst",
-                         driver['constructorId'])
+                         driver['constructorId'] + "#{}".format(data))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    message.edit("Constructors", attach=btns)
+    message.edit("Constructors list\n*Season: *{}".format(data), attach=btns)
 
 
 @bot.callback("constructorlst")
 def constructorlist(message, data):
-    url = "http://ergast.com/api/f1/current/constructors.json"
+
+    data, season = data.split("#")
+
+    url = "http://ergast.com/api/f1/{}/constructors.json".format(season)
 
     btns = botogram.Buttons()
 
@@ -357,14 +392,21 @@ def constructorlist(message, data):
                      vittorie['total'] + "\n*Years: *" + l2[0:len(l2) - 3] +
                      "\n*Nationality: *" + driver['nationality'])
 
-    btns[1].callback("Go back", "menudconstructors")
+    btns[1].callback("Go back", "menudconstructors", season)
     message.edit(text, attach=btns)
 
 
 @bot.command("constructors")
-def constructors_command(chat):
-    """list F1 constructors"""
-    url = "http://ergast.com/api/f1/current/constructors.json"
+def constructors_command(chat, args):
+    """<season> List F1 constructors
+        If the season is not specified or the year is
+        wrong the current season will be used"""
+    if len(args) > 0:
+        season = control_year(args[0])
+    else:
+        season = "current"
+
+    url = "http://ergast.com/api/f1/{}/constructors.json".format(season)
 
     btns = botogram.Buttons()
 
@@ -377,53 +419,68 @@ def constructors_command(chat):
 
     for driver in data:
         btns[y].callback(driver['name'], "constructorlst",
-                         driver['constructorId'])
+                         driver['constructorId'] + "#{}".format(season))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    chat.send("Constructors list", attach=btns)
+    chat.send("Constructors list\n*Season: *{}".format(season), attach=btns)
 
 
 @bot.command("raceresults")
-def raceresults_command(chat):
-    """List all f1 races and get all results"""
-    url = "https://ergast.com/api/f1/current/results.json?limit=99999"
+def raceresults_command(chat, args):
+    """<season> List all f1 races and get all results
+        If the season is not specified or the year is
+        wrong the current season will be used"""
+
+    if len(args) > 0:
+        season = control_year(args[0])
+    else:
+        season = "current"
+
+    url = "https://ergast.com/api/f1/{}/results.json?limit=99999".format(
+        season)
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['RaceTable']['Races']
+    data_requests = r.json()['MRData']['RaceTable']['Races']
 
     btns = botogram.Buttons()
 
     i = -1
     y = 0
 
-    for dat in data:
-        btns[y].callback(dat['raceName'], "raceresult", dat['round'])
+    for dat in data_requests:
+        btns[y].callback(dat['raceName'], "raceresult",
+                         dat['round'] + "#{}".format(season))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    chat.send("Race results", attach=btns, syntax="markdown")
+    chat.send("Race results\n*Season: *{}".format(season), attach=btns,
+              syntax="markdown")
 
 
 @bot.callback("raceresult")
 def raceresultquery(message, data):
-    url = "https://ergast.com/api/f1/current/{}/results.json".format(
-        str(data))
+
+    data, season = data.split("#")
+
+    url = "https://ergast.com/api/f1/{}/{}/results.json".format(season,
+                                                                str(data))
 
     r = requests.get(url)
 
-    dat = r.json()['MRData']['RaceTable']['Races'][0]['Results']
+    data_requests = r.json()['MRData']['RaceTable']['Races'][0]['Results']
 
     btns = botogram.Buttons()
-    btns[0].callback("Qualify", "qualyresult", str(data))
-    btns[1].callback("Go back", "menuresults")
+    btns[0].callback("Qualify", "qualyresult",
+                     str(data) + "#{}".format(season))
+    btns[1].callback("Go back", "menuresults", season)
     text = "*{}*\n\nDRIVER | GAP\n".format(
         r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
 
-    for driver in dat:
+    for driver in data_requests:
         try:
             text += driver['Driver']['code'] + " | " + \
                     driver['Time']['time'] + "\n"
@@ -438,18 +495,22 @@ def raceresultquery(message, data):
 
 @bot.callback("qualyresult")
 def qualyresults(message, data):
-    url = "https://ergast.com/api/f1/current/{}/qualifying.json".format(
-        str(data))
+
+    data, season = data.split("#")
+
+    url = "https://ergast.com/api/f1/{}/{}/qualifying.json".format(season,
+                                                                   str(data))
 
     r = requests.get(url)
 
-    dat = r.json()['MRData']['RaceTable']['Races'][0]['QualifyingResults']
+    data_requests = r.json()['MRData']['RaceTable']
+    data_requests = data_requests['Races'][0]['QualifyingResults']
     btns = botogram.Buttons()
     btns[0].callback("Race", "raceresult", str(data))
-    btns[1].callback("Go back", "menuresults")
+    btns[1].callback("Go back", "menuresults", season)
     text = "*{}*\n\nDRIVER | Time\n".format(
         r.json()['MRData']['RaceTable']['Races'][0]['raceName'])
-    for driver in dat:
+    for driver in data_requests:
         try:
             if driver['Q3'] != "":
                 text += driver['Driver']['code'] + " | " + \
@@ -474,31 +535,41 @@ def qualyresults(message, data):
 
 
 @bot.callback("menuresults")
-def menuresults(message):
-    url = "https://ergast.com/api/f1/current/results.json?limit=99999"
+def menuresults(message, data):
+    url = "https://ergast.com/api/f1/{}/results.json?limit=99999".format(data)
 
     btns = botogram.Buttons()
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['RaceTable']['Races']
+    data_requests = r.json()['MRData']['RaceTable']['Races']
 
     i = -1
     y = 0
 
-    for dat in data:
-        btns[y].callback(dat['raceName'], "raceresult", dat['round'])
+    for dat in data_requests:
+        btns[y].callback(dat['raceName'], "raceresult",
+                         dat['round'] + "#{}".format(data))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    message.edit("Race results", attach=btns, syntax="markdown")
+    message.edit("Constructors list\n*Season: *{}".format(data),
+                 attach=btns, syntax="markdown")
 
 
 @bot.command("circuits")
-def circuitslist_command(chat):
-    """list the circuits"""
-    url = "https://ergast.com/api/f1/current/circuits.json"
+def circuitslist_command(chat, args):
+    """<season> List the circuits
+        If the season is not specified or the year is
+        wrong the current season will be used"""
+
+    if len(args) > 0:
+        season = control_year(args[0])
+    else:
+        season = "current"
+
+    url = "https://ergast.com/api/f1/{}/circuits.json".format(season)
 
     r = requests.get(url)
 
@@ -510,22 +581,24 @@ def circuitslist_command(chat):
     y = 0
 
     for dat in data:
-        btns[y].callback(dat['circuitName'], "circuitslst", dat['circuitId'])
+        btns[y].callback(dat['circuitName'], "circuitslst",
+                         dat['circuitId'] + "#{}".format(season))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    chat.send("Circuit list", attach=btns)
+    chat.send("Circuit list\n*Season: *{}".format(season), attach=btns)
 
 
 @bot.callback("circuitslst")
 def circuitsinfo(message, data):
-    """List all circuits"""
-    url = "https://ergast.com/api/f1/current/circuits/{}.json".format(
-        str(data))
+    data, season = data.split("#")
 
-    url2 = "https://ergast.com/api/f1/current/circuits/{}/races.json".format(
-        str(data))
+    url = "https://ergast.com/api/f1/{}/circuits/{}.json".format(season,
+                                                                 str(data))
+
+    url2 = "https://ergast.com/api/f1/{}/circuits/{}/races.json".format(
+        season, str(data))
 
     r = requests.get(url)
     r2 = requests.get(url2)
@@ -536,8 +609,9 @@ def circuitsinfo(message, data):
     btns = botogram.Buttons()
 
     btns[0].url(dat['circuitName'], dat['url'])
-    btns[1].callback("Send Position", "sendCircuitPosition", data)
-    btns[2].callback("Go back", "menuCircuits")
+    btns[1].callback("Send Position", "sendCircuitPosition",
+                     data + "#{}".format(season))
+    btns[2].callback("Go back", "menuCircuits", season)
 
     text = ("*{}*\n*Round:* {}\n*Date:* {}"
             "\n*Time:* {}\n*Locality:* {}, {}").format(
@@ -552,31 +626,35 @@ def circuitsinfo(message, data):
 
 
 @bot.callback("menuCircuits")
-def menucircuits(message):
-    url = "https://ergast.com/api/f1/current/circuits.json"
+def menucircuits(message, data):
+    print(data)
+    url = "https://ergast.com/api/f1/{}/circuits.json".format(data)
 
     r = requests.get(url)
 
-    data = r.json()['MRData']['CircuitTable']['Circuits']
+    data_requests = r.json()['MRData']['CircuitTable']['Circuits']
 
     btns = botogram.Buttons()
 
     i = -1
     y = 0
 
-    for dat in data:
-        btns[y].callback(dat['circuitName'], "circuitslst", dat['circuitId'])
+    for dat in data_requests:
+        btns[y].callback(dat['circuitName'], "circuitslst",
+                         dat['circuitId'] + "#{}".format(data))
         if i % 2 == 0:
             y += 1
         i += 1
 
-    message.edit("Circuit list", attach=btns)
+    message.edit("Circuit list\n*Season: *{}".format(data), attach=btns)
 
 
 @bot.callback("sendCircuitPosition")
 def circuitposition(chat, data):
-    url = "https://ergast.com/api/f1/current/circuits/{}.json".format(
-        str(data))
+    data, season = data.split("#")
+
+    url = "https://ergast.com/api/f1/{}/circuits/{}.json".format(season,
+                                                                 str(data))
 
     r = requests.get(url)
 
