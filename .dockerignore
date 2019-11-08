@@ -1,0 +1,7 @@
+.git*
+docker*
+Docker*
+config.env*
+.idea
+.dockerignore
+setup.cfg
