@@ -1,4 +1,7 @@
 # FormulaOneBot
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b074f2014e034c9894cb3413ac616e14)](https://www.codacy.com/manual/slinucs/FormulaOneBot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ch3p4ll3/FormulaOneBot&amp;utm_campaign=Badge_Grade)
+
 With this bot you can check the race results and qualifications, get information on the circuits, constructors, drivers and the championship
 
 This bot was born using python, [botogram](https://botogram.dev/) library and [ergast](http://ergast.com/mrd) api's.
